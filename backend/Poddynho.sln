@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Poddynho.Api", "Poddynho.Api\Poddynho.Api.csproj", "{73179719-1E1C-4026-B380-EF9F0BD95CA5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Poddynho.Domain", "Poddynho.Domain\Poddynho.Domain.csproj", "{3EB4FA18-4333-41CC-936E-E60774E39047}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integracoes", "Integracoes", "{823B9D26-5A44-4E34-B3C0-D726B980A7A7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Poddynho.Petrobras", "Poddynho.Petrobras\Poddynho.Petrobras.csproj", "{9DC3FDDF-D2A5-4B9E-AAE6-E9CEFCB0C8BB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{73179719-1E1C-4026-B380-EF9F0BD95CA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73179719-1E1C-4026-B380-EF9F0BD95CA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73179719-1E1C-4026-B380-EF9F0BD95CA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73179719-1E1C-4026-B380-EF9F0BD95CA5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3EB4FA18-4333-41CC-936E-E60774E39047}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3EB4FA18-4333-41CC-936E-E60774E39047}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3EB4FA18-4333-41CC-936E-E60774E39047}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3EB4FA18-4333-41CC-936E-E60774E39047}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DC3FDDF-D2A5-4B9E-AAE6-E9CEFCB0C8BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DC3FDDF-D2A5-4B9E-AAE6-E9CEFCB0C8BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DC3FDDF-D2A5-4B9E-AAE6-E9CEFCB0C8BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DC3FDDF-D2A5-4B9E-AAE6-E9CEFCB0C8BB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9DC3FDDF-D2A5-4B9E-AAE6-E9CEFCB0C8BB} = {823B9D26-5A44-4E34-B3C0-D726B980A7A7}
+	EndGlobalSection
+EndGlobal

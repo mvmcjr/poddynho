@@ -1,0 +1,13 @@
+
+<app-mapa 
+  [postos]="postos()" 
+  [polyline]="polyline()">
+</app-mapa>
+
+<app-rota-builder (calcularRota)="onCalcularRota($event)"></app-rota-builder>
+
+<app-resultado-rota 
+  [rota]="rota()" 
+  [postosProximos]="postosProximos()">
+</app-resultado-rota>
+
