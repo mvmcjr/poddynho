@@ -1,10 +1,22 @@
-import { Component, signal, output } from '@angular/core';
+import { Component, signal, output, effect } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PontoInputComponent } from './ponto-input.component';
 import { PontoGeografico } from '../models';
+
+type SnapshotEstado = {
+  origem: PontoGeografico | null;
+  destino: PontoGeografico | null;
+  waypoints: (PontoGeografico | null)[];
+};
+
+type ParametrosCalculo = {
+  origem: PontoGeografico;
+  destino: PontoGeografico;
+  waypoints: PontoGeografico[];
+};
 
 @Component({
   selector: 'app-rota-builder',
@@ -67,6 +79,8 @@ import { PontoGeografico } from '../models';
         <button 
           mat-raised-button 
           color="primary" 
+          class="calcular-button"
+          [class.calcular-button--desatualizada]="alteracoesPendentes() && !calculando()"
           [disabled]="!origem() || !destino() || calculando()"
           (click)="calcular()">
           @if (calculando()) {
@@ -75,18 +89,8 @@ import { PontoGeografico } from '../models';
           @if (!calculando()) {
             <mat-icon>route</mat-icon>
           }
-          {{ calculando() ? 'Calculando...' : 'Calcular Rota' }}
+          {{ calculando() ? 'Calculando...' : alteracoesPendentes() ? 'Recalcular Rota' : 'Calcular Rota' }}
         </button>
-        
-        @if (origem() || destino() || waypoints().length > 0) {
-          <button 
-            mat-button 
-            color="warn"
-            (click)="limpar()">
-            <mat-icon>clear_all</mat-icon>
-            Limpar
-          </button>
-        }
       </mat-card-actions>
     </mat-card>
   `,
@@ -150,8 +154,63 @@ import { PontoGeografico } from '../models';
       border-top: 1px solid rgba(0,0,0,0.08);
     }
 
-    mat-card-actions button {
-      width: 100%;
+    .calcular-button {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: #f8fafc;
+      --mdc-filled-button-label-text-color: #f8fafc;
+      --mdc-filled-button-icon-color: #f8fafc;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      border: none;
+    }
+
+    .calcular-button mat-icon {
+      color: inherit;
+    }
+
+    .calcular-button .mdc-button__label {
+      color: inherit !important;
+      text-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+    }
+
+    .calcular-button:hover:not([disabled]) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px rgba(76, 29, 149, 0.25);
+      filter: brightness(1.05);
+    }
+
+    .calcular-button:disabled {
+      background: linear-gradient(135deg, #bfdbfe, #ddd6fe);
+      color: rgba(30, 41, 59, 0.7);
+      --mdc-filled-button-disabled-label-text-color: rgba(30, 41, 59, 0.7);
+      --mdc-filled-button-icon-color: rgba(30, 41, 59, 0.7);
+      box-shadow: none;
+      transform: none;
+    }
+
+    .calcular-button:disabled .mdc-button__label {
+      color: rgba(30, 41, 59, 0.7) !important;
+      text-shadow: none;
+    }
+
+    .calcular-button--desatualizada {
+      background: linear-gradient(135deg, #fde68a, #fbbf24);
+      color: #422006;
+      --mdc-filled-button-label-text-color: #422006;
+      --mdc-filled-button-icon-color: #422006;
+      box-shadow: 0 12px 28px rgba(251, 191, 36, 0.35);
+    }
+
+    .calcular-button--desatualizada .mdc-button__label {
+      color: #422006 !important;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.35);
+    }
+
+    .calcular-button--desatualizada:hover:not([disabled]) {
+      box-shadow: 0 14px 32px rgba(251, 191, 36, 0.42);
+      filter: brightness(1.05);
     }
   `
 })
@@ -161,9 +220,26 @@ export class RotaBuilderComponent {
   waypoints = signal<(PontoGeografico | null)[]>([]);
   waypointsLabels = signal<string[]>([]);
   calculando = signal(false);
+  alteracoesPendentes = signal(false);
+  alteracoesPendentesChange = output<boolean>();
   
   enderecoOrigem = signal('');
   enderecoDestino = signal('');
+    private ultimoSnapshotCalculado: SnapshotEstado = this.criarSnapshotAtual();
+    private estadoAlterado = false;
+
+    constructor() {
+      effect(() => {
+        const snapshot = this.criarSnapshotAtual();
+        const alterado = !this.snapshotsIguais(snapshot, this.ultimoSnapshotCalculado);
+        if (alterado !== this.estadoAlterado) {
+          this.estadoAlterado = alterado;
+          this.alteracoesPendentes.set(alterado);
+          this.alteracoesPendentesChange.emit(alterado);
+        }
+      });
+    }
+  
   
   calcularRota = output<{
     origem: PontoGeografico;
@@ -228,6 +304,24 @@ export class RotaBuilderComponent {
     this.calculando.set(value);
   }
 
+  confirmarCalculoAtual(parametros?: ParametrosCalculo) {
+    if (parametros) {
+      this.ultimoSnapshotCalculado = {
+        origem: this.clonarPonto(parametros.origem),
+        destino: this.clonarPonto(parametros.destino),
+        waypoints: parametros.waypoints.map(ponto => this.clonarPonto(ponto))
+      };
+    } else {
+      this.ultimoSnapshotCalculado = this.criarSnapshotAtual();
+    }
+
+    const atual = this.criarSnapshotAtual();
+    const alterado = !this.snapshotsIguais(atual, this.ultimoSnapshotCalculado);
+    this.estadoAlterado = alterado;
+    this.alteracoesPendentes.set(alterado);
+    this.alteracoesPendentesChange.emit(alterado);
+  }
+
   obterEtiquetaParada(indice: number) {
     const labels = this.waypointsLabels();
     return labels[indice] ?? this.gerarEtiquetaPadrao(indice);
@@ -243,5 +337,34 @@ export class RotaBuilderComponent {
         ? this.gerarEtiquetaPadrao(indice)
         : label
     );
+  }
+
+  private criarSnapshotAtual(): SnapshotEstado {
+    return {
+      origem: this.clonarPonto(this.origem()),
+      destino: this.clonarPonto(this.destino()),
+      waypoints: this.waypoints().map(ponto => this.clonarPonto(ponto))
+    };
+  }
+
+  private snapshotsIguais(atual: SnapshotEstado, referencia: SnapshotEstado) {
+    if (!this.pontosIguais(atual.origem, referencia.origem)) return false;
+    if (!this.pontosIguais(atual.destino, referencia.destino)) return false;
+    if (atual.waypoints.length !== referencia.waypoints.length) return false;
+    for (let i = 0; i < atual.waypoints.length; i += 1) {
+      if (!this.pontosIguais(atual.waypoints[i], referencia.waypoints[i])) return false;
+    }
+    return true;
+  }
+
+  private pontosIguais(a: PontoGeografico | null, b: PontoGeografico | null) {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return a.latitude === b.latitude && a.longitude === b.longitude;
+  }
+
+  private clonarPonto(ponto: PontoGeografico | null) {
+    if (!ponto) return null;
+    return { latitude: ponto.latitude, longitude: ponto.longitude };
   }
 }

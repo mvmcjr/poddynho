@@ -19,7 +19,7 @@ export class RotaService {
     ).pipe(
       catchError(error => {
         console.error('Erro ao calcular rota:', error);
-        return throwError(() => new Error('Falha ao calcular rota'));
+        return throwError(() => error);
       })
     );
   }

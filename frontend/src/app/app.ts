@@ -1,4 +1,5 @@
-import { Component, signal, viewChild } from '@angular/core';
+import { Component, signal, viewChild, computed } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MapaComponent } from './components/mapa.component';
 import { RotaBuilderComponent } from './components/rota-builder.component';
 import { ResultadoRotaComponent } from './components/resultado-rota.component';
@@ -6,6 +7,18 @@ import { FiltrosRotaComponent } from './components/filtros-rota.component';
 import { RotaService } from './services/rota.service';
 import { Posto, PontoGeografico, RotaDto, Combustivel } from './models';
 import { decodePolyline } from './utils/polyline';
+
+type ParametrosRota = {
+  origem: PontoGeografico;
+  destino: PontoGeografico;
+  waypoints: PontoGeografico[];
+};
+
+type ErroCalculo = {
+  status?: number;
+  mensagem: string;
+  detalhes: string;
+};
 
 @Component({
   selector: 'app-root',
@@ -19,7 +32,10 @@ import { decodePolyline } from './utils/polyline';
 
     <div class="overlay">
       <div class="overlay__column overlay__column--left">
-        <app-rota-builder (calcularRota)="onCalcularRota($event)"></app-rota-builder>
+        <app-rota-builder 
+          (calcularRota)="onCalcularRota($event)"
+          (alteracoesPendentesChange)="onAlteracoesPendentes($event)">
+        </app-rota-builder>
 
         <app-filtros-rota 
           [(tiposCombustivel)]="tiposCombustivel"
@@ -29,8 +45,10 @@ import { decodePolyline } from './utils/polyline';
 
       <div class="overlay__column overlay__column--right">
         <app-resultado-rota 
-          [rota]="rota()" 
-          [postosProximos]="postosProximos()">
+          [rota]="rotaParaExibicao()" 
+          [postosProximos]="postosParaExibicao()"
+          [googleMapsUrl]="googleMapsUrlExibicao()"
+          [erro]="erroCalculo()">
         </app-resultado-rota>
       </div>
     </div>
@@ -48,16 +66,34 @@ export class App {
   
   tiposCombustivel = signal<Combustivel[]>([]);
   distanciaMaximaEmKm = signal<number>(20);
+  parametrosRotaAtual = signal<ParametrosRota | null>(null);
+  erroCalculo = signal<ErroCalculo | null>(null);
+  rotaVisivel = signal(false);
+  googleMapsUrl = computed(() => {
+    const parametros = this.parametrosRotaAtual();
+    if (!parametros) return null;
+    return this.montarGoogleMapsUrl(parametros);
+  });
+  rotaParaExibicao = computed(() => (this.rotaVisivel() ? this.rota() : null));
+  postosParaExibicao = computed(() => (this.rotaVisivel() ? this.postosProximos() : []));
+  googleMapsUrlExibicao = computed(() => (this.rotaVisivel() ? this.googleMapsUrl() : null));
+  private parametrosPendentes: ParametrosRota | null = null;
 
   constructor(private rotaService: RotaService) {}
 
   onCalcularRota(event: { origem: PontoGeografico; destino: PontoGeografico; waypoints: PontoGeografico[] }) {
+    const parametros = this.clonarParametros(event);
+    this.parametrosPendentes = parametros;
     this.rotaBuilder().setCalculando(true);
-    
+    this.erroCalculo.set(null);
+    this.postosProximos.set([]);
+    this.postos.set([]);
+    this.rotaVisivel.set(false);
+
     this.rotaService.calcularRota({
-      origem: event.origem,
-      destino: event.destino,
-      pontosIntermediarios: event.waypoints.length > 0 ? event.waypoints : undefined,
+      origem: parametros.origem,
+      destino: parametros.destino,
+      pontosIntermediarios: parametros.waypoints.length > 0 ? parametros.waypoints : undefined,
       tiposCombustivel: this.tiposCombustivel().length > 0 ? this.tiposCombustivel() : undefined,
       distanciaMaximaEmKm: this.distanciaMaximaEmKm()
     }).subscribe({
@@ -65,15 +101,25 @@ export class App {
         this.rota.set(resposta.rota);
         this.postosProximos.set(resposta.postosProximos);
         this.postos.set(resposta.postosProximos);
+        this.erroCalculo.set(null);
         
         const decodedPolyline = decodePolyline(resposta.rota.polyline);
         this.polyline.set(decodedPolyline);
         this.mapa().focusPolyline(decodedPolyline);
-        
+
+        if (this.parametrosPendentes) {
+          this.parametrosRotaAtual.set(this.parametrosPendentes);
+          this.rotaBuilder().confirmarCalculoAtual(this.parametrosPendentes);
+          this.parametrosPendentes = null;
+        } else {
+          this.rotaBuilder().confirmarCalculoAtual();
+        }
         this.rotaBuilder().setCalculando(false);
+          this.rotaVisivel.set(true);
       },
       error: (error) => {
-        console.error('Erro ao calcular rota:', error);
+        this.erroCalculo.set(this.criarErroCalculo(error));
+        this.parametrosPendentes = null;
         this.rotaBuilder().setCalculando(false);
       }
     });
@@ -81,5 +127,80 @@ export class App {
 
   onAdicionarPosto(evento: { posto: Posto; etiqueta?: string }) {
     this.rotaBuilder().adicionarParada(evento.posto.localizacao, evento.etiqueta ?? evento.posto.nome);
+  }
+
+  onAlteracoesPendentes(alterado: boolean) {
+    if (alterado) {
+      this.rotaVisivel.set(false);
+    } else if (this.rota()) {
+      this.rotaVisivel.set(true);
+    }
+  }
+
+  private clonarParametros(evento: { origem: PontoGeografico; destino: PontoGeografico; waypoints: PontoGeografico[] }): ParametrosRota {
+    return {
+      origem: { latitude: evento.origem.latitude, longitude: evento.origem.longitude },
+      destino: { latitude: evento.destino.latitude, longitude: evento.destino.longitude },
+      waypoints: evento.waypoints.map(ponto => ({ latitude: ponto.latitude, longitude: ponto.longitude }))
+    };
+  }
+
+  private montarGoogleMapsUrl(parametros: ParametrosRota) {
+    const params = new URLSearchParams({
+      api: '1',
+      origin: this.formatarPonto(parametros.origem),
+      destination: this.formatarPonto(parametros.destino),
+      travelmode: 'driving',
+      language: 'pt-BR'
+    });
+
+    if (parametros.waypoints.length > 0) {
+      params.set('waypoints', parametros.waypoints.map(ponto => this.formatarPonto(ponto)).join('|'));
+    }
+
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+  }
+
+  private formatarPonto(ponto: PontoGeografico) {
+    return `${ponto.latitude},${ponto.longitude}`;
+  }
+
+  private criarErroCalculo(erro: unknown): ErroCalculo {
+    const httpErro = erro as HttpErrorResponse;
+    const status = httpErro?.status ?? undefined;
+    const mensagem = httpErro?.error?.mensagem ?? httpErro?.statusText ?? httpErro?.message ?? 'Falha ao calcular rota';
+    const detalhesRaw = this.extrairDetalhes(httpErro);
+    return {
+      status,
+      mensagem,
+      detalhes: detalhesRaw
+    };
+  }
+
+  private extrairDetalhes(httpErro: HttpErrorResponse | undefined) {
+    if (!httpErro) return 'Nenhum detalhe retornado pelo servidor.';
+    const corpo = httpErro.error;
+    if (typeof corpo === 'string') {
+      const texto = corpo.trim();
+      return texto.length > 0 ? texto : 'Nenhum detalhe retornado pelo servidor.';
+    }
+    if (corpo instanceof ArrayBuffer) {
+      try {
+        const decoder = new TextDecoder();
+        const texto = decoder.decode(corpo).trim();
+        return texto.length > 0 ? texto : 'Nenhum detalhe retornado pelo servidor.';
+      } catch {
+        return 'Não foi possível ler os detalhes do erro.';
+      }
+    }
+    if (corpo && typeof corpo === 'object') {
+      try {
+        return JSON.stringify(corpo, null, 2);
+      } catch {
+        return 'Não foi possível formatar os detalhes do erro.';
+      }
+    }
+    const texto = httpErro.message?.trim();
+    return texto && texto.length > 0 ? texto : 'Nenhum detalhe retornado pelo servidor.';
   }
 }
