@@ -12,6 +12,9 @@ RUN dotnet publish backend/Poddynho.Api/Poddynho.Api.csproj -c Release -o /app/p
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+COPY --from=build /src/backend/static-jsons/ ./static-jsons/
+COPY backend/docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "Poddynho.Api.dll"]
+ENTRYPOINT ["/entrypoint.sh"]
