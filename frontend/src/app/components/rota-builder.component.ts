@@ -1,4 +1,4 @@
-import { Component, signal, output, effect } from '@angular/core';
+import { Component, signal, output, effect, computed } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -78,13 +78,20 @@ type ParametrosCalculo = {
       <mat-card-actions>
         <button 
           mat-raised-button 
-          color="primary" 
           class="calcular-button"
-          [class.calcular-button--desatualizada]="alteracoesPendentes() && !calculando()"
+          [class.calcular-button--primary]="!estadoWarn()"
+          [class.calcular-button--warn]="estadoWarn()"
+          [style.color]="corTextoBotao()"
+          [style.--mdc-filled-button-label-text-color]="corTextoBotao()"
+          [style.--mdc-filled-button-icon-color]="corTextoBotao()"
           [disabled]="!origem() || !destino() || calculando()"
           (click)="calcular()">
           @if (calculando()) {
-            <mat-spinner diameter="20" style="display: inline-block; margin-right: 8px;"></mat-spinner>
+            <mat-spinner 
+              [color]="estadoWarn() ? 'warn' : 'primary'"
+              diameter="20" 
+              style="display: inline-block; margin-right: 8px;">
+            </mat-spinner>
           }
           @if (!calculando()) {
             <mat-icon>route</mat-icon>
@@ -155,30 +162,31 @@ type ParametrosCalculo = {
     }
 
     .calcular-button {
-      background: linear-gradient(135deg, #2563eb, #7c3aed);
-      color: #f8fafc;
-      --mdc-filled-button-label-text-color: #f8fafc;
-      --mdc-filled-button-icon-color: #f8fafc;
       font-weight: 600;
       letter-spacing: 0.4px;
       text-transform: uppercase;
       transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
       border: none;
+      border-radius: 999px;
+      padding: 0 24px;
+      min-height: 46px;
+      color: #f8fafc;
+      --mdc-filled-button-container-color: transparent;
     }
 
     .calcular-button mat-icon {
       color: inherit;
     }
 
-    .calcular-button .mdc-button__label {
-      color: inherit !important;
-      text-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+    .calcular-button--primary {
+      background: linear-gradient(135deg, #2563eb, #6366f1 45%, #a855f7);
+      box-shadow: 0 12px 28px rgba(79, 70, 229, 0.28);
     }
 
-    .calcular-button:hover:not([disabled]) {
+    .calcular-button--primary:hover:not([disabled]) {
       transform: translateY(-1px);
-      box-shadow: 0 10px 25px rgba(76, 29, 149, 0.25);
       filter: brightness(1.05);
+      box-shadow: 0 14px 32px rgba(79, 70, 229, 0.36);
     }
 
     .calcular-button:disabled {
@@ -188,29 +196,28 @@ type ParametrosCalculo = {
       --mdc-filled-button-icon-color: rgba(30, 41, 59, 0.7);
       box-shadow: none;
       transform: none;
+      filter: none;
     }
 
     .calcular-button:disabled .mdc-button__label {
       color: rgba(30, 41, 59, 0.7) !important;
-      text-shadow: none;
     }
 
-    .calcular-button--desatualizada {
-      background: linear-gradient(135deg, #fde68a, #fbbf24);
-      color: #422006;
-      --mdc-filled-button-label-text-color: #422006;
-      --mdc-filled-button-icon-color: #422006;
-      box-shadow: 0 12px 28px rgba(251, 191, 36, 0.35);
+    .calcular-button .mdc-button__label {
+      color: inherit !important;
+      text-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
     }
 
-    .calcular-button--desatualizada .mdc-button__label {
-      color: #422006 !important;
-      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.35);
+    .calcular-button--warn {
+      background: linear-gradient(135deg, #f97316, #f43f5e 40%, #d946ef);
+      box-shadow: 0 12px 28px rgba(244, 63, 94, 0.32);
+      text-shadow: 0 1px 2px rgba(119, 29, 29, 0.35);
     }
 
-    .calcular-button--desatualizada:hover:not([disabled]) {
-      box-shadow: 0 14px 32px rgba(251, 191, 36, 0.42);
+    .calcular-button--warn:hover:not([disabled]) {
+      transform: translateY(-1px);
       filter: brightness(1.05);
+      box-shadow: 0 14px 32px rgba(244, 63, 94, 0.4);
     }
   `
 })
@@ -225,20 +232,22 @@ export class RotaBuilderComponent {
   
   enderecoOrigem = signal('');
   enderecoDestino = signal('');
-    private ultimoSnapshotCalculado: SnapshotEstado = this.criarSnapshotAtual();
-    private estadoAlterado = false;
+  estadoWarn = computed(() => this.alteracoesPendentes() && !this.calculando());
+  corTextoBotao = computed(() => (this.estadoWarn() ? '#fff5f5' : '#f8fafc'));
+  private ultimoSnapshotCalculado: SnapshotEstado = this.criarSnapshotAtual();
+  private estadoAlterado = false;
 
-    constructor() {
-      effect(() => {
-        const snapshot = this.criarSnapshotAtual();
-        const alterado = !this.snapshotsIguais(snapshot, this.ultimoSnapshotCalculado);
-        if (alterado !== this.estadoAlterado) {
-          this.estadoAlterado = alterado;
-          this.alteracoesPendentes.set(alterado);
-          this.alteracoesPendentesChange.emit(alterado);
-        }
-      });
-    }
+  constructor() {
+    effect(() => {
+      const snapshot = this.criarSnapshotAtual();
+      const alterado = !this.snapshotsIguais(snapshot, this.ultimoSnapshotCalculado);
+      if (alterado !== this.estadoAlterado) {
+        this.estadoAlterado = alterado;
+        this.alteracoesPendentes.set(alterado);
+        this.alteracoesPendentesChange.emit(alterado);
+      }
+    });
+  }
   
   
   calcularRota = output<{

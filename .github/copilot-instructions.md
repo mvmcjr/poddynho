@@ -84,7 +84,7 @@ dotnet build Poddynho.sln
 
 ### Tech Stack
 - **Angular 20**: Component-based framework with standalone components (default since v14)
-- **Angular Material**: Official Google Material Design components
+- **Angular Material v3**: Official Google Material Design components (MDC-based, Material You tokens)
 - **@angular/google-maps**: Official Angular wrapper for Google Maps JavaScript API
 - **TypeScript**: Strict type checking enabled
 - **RxJS**: Reactive programming for state and async operations
@@ -269,6 +269,8 @@ Load API in `index.html`:
 ```
 
 ### Material Design Styling
+
+- **Material 3 Tokens**: Components rely on Angular Material v3 CSS custom properties; prefer overriding `--mdc-*` tokens instead of legacy palette mixins when theming or tweaking component colors.
 
 #### Theme Configuration
 Define in `src/styles.scss`:
