@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Poddynho;
 using Poddynho.DbContexts;
 using Poddynho.HostedServices;
 using Poddynho.Petrobras;
@@ -41,6 +42,16 @@ if (app.Environment.IsDevelopment())
         .AllowAnyOrigin()
         .AllowAnyMethod()
         .AllowAnyHeader());
+}
+else
+{
+    app.UseCors(x =>
+    {
+        x.WithOrigins(AmbienteHelper.ObterVariavelAmbiente("PUBLIC_URL", app.Environment))
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .WithExposedHeaders("X-Logout");
+    });
 }
 
 app.UseAuthorization();
