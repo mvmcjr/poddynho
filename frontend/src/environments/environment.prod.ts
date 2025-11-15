@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.toddynho.mvmcj.com',
+  apiBaseUrl: 'https://api-poddynho.mvmcj.com',
   googleMapsApiKey: 'AIzaSyDno0uJ2LIDK9SSeo2iRZzjYbEUHSdM58I'
 };
