@@ -51,7 +51,7 @@ type ErroCalculo = {
         </div>
 
         <div
-          class="pointer-events-auto flex max-h-[calc(100vh-64px)] w-[clamp(320px,32vw,420px)] flex-col gap-5 overflow-y-auto rounded-3xl bg-white/70 p-1 max-lg:w-full max-lg:max-h-none max-lg:bg-transparent max-lg:p-0">
+          class="pointer-events-auto flex max-h-[calc(100vh-64px)] w-[clamp(320px,32vw,420px)] flex-col gap-5 overflow-y-auto rounded-3xl p-1 max-lg:w-full max-lg:max-h-none max-lg:bg-transparent max-lg:p-0">
           <app-resultado-rota 
             [rota]="rotaParaExibicao()" 
             [postosProximos]="postosParaExibicao()"

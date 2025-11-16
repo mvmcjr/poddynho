@@ -42,8 +42,7 @@ type ParametrosCalculo = {
           <ng-icon name="matRouteOutline" class="h-6 w-6" />
         </span>
         <div>
-          <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400">Planejar</p>
-          <h2 class="text-lg font-semibold text-slate-900">Planejar Rota</h2>
+          <h2 class="text-lg font-semibold uppercase tracking-[0.1em] text-slate-900">Planejar Rota</h2>
         </div>
       </header>
 
