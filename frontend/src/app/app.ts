@@ -5,7 +5,7 @@ import { RotaBuilderComponent } from './components/rota-builder.component';
 import { ResultadoRotaComponent } from './components/resultado-rota.component';
 import { FiltrosRotaComponent } from './components/filtros-rota.component';
 import { RotaService } from './services/rota.service';
-import { Posto, PontoGeografico, RotaDto, Combustivel } from './models';
+import { Posto, PostoComDistancias, PontoGeografico, RotaDto, Combustivel } from './models';
 import { decodePolyline } from './utils/polyline';
 
 type ParametrosRota = {
@@ -24,36 +24,44 @@ type ErroCalculo = {
   selector: 'app-root',
   imports: [MapaComponent, RotaBuilderComponent, ResultadoRotaComponent, FiltrosRotaComponent],
   template: `
-    <app-mapa 
-      [postos]="postos()" 
-      [polyline]="polyline()"
-      (adicionarPosto)="onAdicionarPosto($event)">
-    </app-mapa>
+    <div class="relative h-full min-h-screen w-full">
+      <app-mapa 
+        class="absolute inset-0"
+        [postos]="postos()" 
+        [polyline]="polyline()"
+        [origem]="rotaBuilder().origem()"
+        [destino]="rotaBuilder().destino()"
+        [waypoints]="rotaBuilder().obterWaypointsComoArray()"
+        (adicionarPosto)="onAdicionarPosto($event)">
+      </app-mapa>
 
-    <div class="overlay">
-      <div class="overlay__column overlay__column--left">
-        <app-rota-builder 
-          (calcularRota)="onCalcularRota($event)"
-          (alteracoesPendentesChange)="onAlteracoesPendentes($event)">
-        </app-rota-builder>
+      <div
+        class="pointer-events-none absolute inset-0 flex items-start justify-between gap-8 p-8 xl:p-10 max-xl:gap-6 max-xl:p-6 max-lg:flex-col max-lg:items-stretch max-lg:justify-start max-lg:gap-4 max-lg:p-4">
+        <div
+          class="pointer-events-auto flex max-h-[calc(100vh-64px)] w-[clamp(280px,28vw,360px)] flex-col gap-5 overflow-y-auto rounded-3xl p-1 max-lg:w-full max-lg:max-h-none max-lg:bg-transparent max-lg:p-0">
+          <app-rota-builder 
+            (calcularRota)="onCalcularRota($event)"
+            (alteracoesPendentesChange)="onAlteracoesPendentes($event)">
+          </app-rota-builder>
 
-        <app-filtros-rota 
-          [(tiposCombustivel)]="tiposCombustivel"
-          [(distanciaMaximaEmKm)]="distanciaMaximaEmKm">
-        </app-filtros-rota>
-      </div>
+          <app-filtros-rota 
+            [(tiposCombustivel)]="tiposCombustivel"
+            [(distanciaMaximaEmKm)]="distanciaMaximaEmKm">
+          </app-filtros-rota>
+        </div>
 
-      <div class="overlay__column overlay__column--right">
-        <app-resultado-rota 
-          [rota]="rotaParaExibicao()" 
-          [postosProximos]="postosParaExibicao()"
-          [googleMapsUrl]="googleMapsUrlExibicao()"
-          [erro]="erroCalculo()">
-        </app-resultado-rota>
+        <div
+          class="pointer-events-auto flex max-h-[calc(100vh-64px)] w-[clamp(320px,32vw,420px)] flex-col gap-5 overflow-y-auto rounded-3xl bg-white/70 p-1 max-lg:w-full max-lg:max-h-none max-lg:bg-transparent max-lg:p-0">
+          <app-resultado-rota 
+            [rota]="rotaParaExibicao()" 
+            [postosProximos]="postosParaExibicao()"
+            [googleMapsUrl]="googleMapsUrlExibicao()"
+            [erro]="erroCalculo()">
+          </app-resultado-rota>
+        </div>
       </div>
     </div>
-  `,
-  styleUrl: './app.scss'
+  `
 })
 export class App {
   rotaBuilder = viewChild.required(RotaBuilderComponent);
@@ -62,7 +70,7 @@ export class App {
   postos = signal<Posto[]>([]);
   polyline = signal<google.maps.LatLngLiteral[] | null>(null);
   rota = signal<RotaDto | null>(null);
-  postosProximos = signal<Posto[]>([]);
+  postosProximos = signal<PostoComDistancias[]>([]);
   
   tiposCombustivel = signal<Combustivel[]>([]);
   distanciaMaximaEmKm = signal<number>(20);
@@ -126,7 +134,7 @@ export class App {
   }
 
   onAdicionarPosto(evento: { posto: Posto; etiqueta?: string }) {
-    this.rotaBuilder().adicionarParada(evento.posto.localizacao, evento.etiqueta ?? evento.posto.nome);
+    this.rotaBuilder().adicionarParada(evento.posto, evento.etiqueta ?? evento.posto.nome);
   }
 
   onAlteracoesPendentes(alterado: boolean) {

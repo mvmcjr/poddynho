@@ -17,6 +17,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 builder.Services.AddScoped<ServicoCalculoRota>();
+builder.Services.Configure<RouteOptions>(options => { options.LowercaseUrls = true; });
 
 builder.Services.AddDbContext<PostosDbContext>(o => o.UseInMemoryDatabase(nameof(PostosDbContext)));
 

@@ -1,12 +1,6 @@
 import { Component, signal, input, computed, effect } from '@angular/core';
-import { MatCardModule } from '@angular/material/card';
-import { MatListModule } from '@angular/material/list';
-import { MatIconModule } from '@angular/material/icon';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatButtonModule } from '@angular/material/button';
 import { DecimalPipe } from '@angular/common';
-import { Posto, RotaDto } from '../models';
+import { PostoComDistancias, RotaDto } from '../models';
 
 type ResumoErro = {
   status?: number;
@@ -16,329 +10,125 @@ type ResumoErro = {
 
 @Component({
   selector: 'app-resultado-rota',
-  imports: [
-    MatCardModule, 
-    MatListModule, 
-    MatIconModule, 
-    MatDividerModule,
-    MatChipsModule,
-    MatButtonModule,
-    DecimalPipe
-  ],
-  host: { class: 'overlay-panel overlay-panel--wide overlay-panel--tall' },
+  imports: [DecimalPipe],
+  host: { class: 'block w-full' },
   template: `
-    @if (erro()) {
-      <mat-card class="overlay-card overlay-card--error">
-        <mat-card-header>
-          <mat-card-title>
-            <mat-icon color="warn">error</mat-icon>
-            Falha ao calcular rota
-          </mat-card-title>
-        </mat-card-header>
-
-        <mat-card-content>
-          <div class="erro-resumo">
-            @if (erro()?.status) {
-              <span class="erro-status">HTTP {{ erro()!.status }}</span>
-            }
-            <span class="erro-mensagem">{{ erro()!.mensagem }}</span>
-          </div>
-
-          <button mat-stroked-button color="primary" (click)="alternarDetalhes()">
-            <mat-icon>{{ mostrarDetalhes() ? 'expand_less' : 'expand_more' }}</mat-icon>
-            {{ mostrarDetalhes() ? 'Ocultar detalhes' : 'Mostrar detalhes' }}
-          </button>
-
-          @if (mostrarDetalhes()) {
-            <pre class="erro-detalhes">{{ detalhesFormatados() }}</pre>
-          }
-        </mat-card-content>
-      </mat-card>
-    }
-
-    @if (rota()) {
-      <mat-card class="overlay-card overlay-card--scrollable">
-        <mat-card-header>
-          <mat-card-title>
-            <mat-icon>info</mat-icon>
-            Detalhes da Rota
-          </mat-card-title>
-        </mat-card-header>
-
-        @if (googleMapsUrl()) {
-          <mat-card-actions>
-            <a mat-stroked-button color="primary" [href]="googleMapsUrl()!" target="_blank" rel="noopener">
-              <mat-icon>open_in_new</mat-icon>
-              Abrir no Google Maps
-            </a>
-          </mat-card-actions>
-        }
-        
-        <mat-card-content>
-          <div class="rota-info">
-            <div class="info-item">
-              <mat-icon>straighten</mat-icon>
-              <span class="label">Distância:</span>
-              <span class="value">{{ rota()!.distanciaEmMetros / 1000 | number:'1.1-1' }} km</span>
+    <div class="flex h-full flex-col gap-4">
+      @if (erro()) {
+        <section class="rounded-3xl border border-rose-200/60 bg-white/95 px-6 py-5 text-sm text-slate-600 shadow-lg shadow-rose-200/40">
+          <header class="flex items-center gap-3 text-rose-500">
+            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-500/10">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12V16.5zm9-4.5a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+            <div class="flex flex-col">
+              <span class="text-xs font-semibold uppercase tracking-[0.3em]">Falha ao calcular rota</span>
+              <span class="text-sm font-semibold text-slate-800">Verifique os detalhes abaixo</span>
             </div>
-            
-            <div class="info-item">
-              <mat-icon>schedule</mat-icon>
-              <span class="label">Duração:</span>
-              <span class="value">{{ rota()!.duracao }}</span>
-            </div>
-          </div>
-          
-          <mat-divider></mat-divider>
-          
-          <div class="postos-header">
-            <h3>
-              <mat-icon>local_gas_station</mat-icon>
-              Postos Próximos ({{ postosProximos().length }})
-            </h3>
-          </div>
-          
-          @if (postosProximos().length > 0) {
-            <mat-list>
-              @for (posto of postosProximos(); track posto.id || $index) {
-                <mat-list-item>
-                  <div class="posto-item">
-                    <div class="posto-header">
-                      <span class="posto-nome">{{ posto.nome }}</span>
-                    </div>
-                    <div class="posto-bandeira">{{ posto.bandeira }}</div>
-                    <mat-chip-set>
-                      @for (combustivel of posto.combustiveis; track combustivel) {
-                        <mat-chip>{{ combustivel }}</mat-chip>
-                      }
-                    </mat-chip-set>
-                  </div>
-                </mat-list-item>
-                <mat-divider></mat-divider>
+          </header>
+
+          <div class="mt-4 space-y-3">
+            <div class="space-y-1">
+              @if (erro()?.status) {
+                <span class="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">HTTP {{ erro()!.status }}</span>
               }
-            </mat-list>
-          } @else {
-            <div class="empty-state">
-              <mat-icon>search_off</mat-icon>
-              <p>Nenhum posto encontrado próximo à rota</p>
+              <p class="text-sm font-medium text-slate-700">{{ erro()!.mensagem }}</p>
             </div>
-          }
-        </mat-card-content>
-      </mat-card>
-    }
-  `,
-  styles: `
-      :host {
-        display: block;
+
+            <button
+              type="button"
+              (click)="alternarDetalhes()"
+              class="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-rose-600 transition hover:border-rose-300 hover:bg-rose-100">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                @if (mostrarDetalhes()) {
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 15l-6-6-6 6" />
+                } @else {
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+                }
+              </svg>
+              {{ mostrarDetalhes() ? 'Ocultar detalhes' : 'Mostrar detalhes' }}
+            </button>
+
+            @if (mostrarDetalhes()) {
+              <pre class="max-h-52 overflow-auto rounded-2xl bg-rose-50/70 p-4 text-[12px] leading-relaxed text-rose-900 shadow-inner">{{ detalhesFormatados() }}</pre>
+            }
+          </div>
+        </section>
       }
 
-    .overlay-card {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-    }
+      @if (rota()) {
+        <section class="flex h-full flex-col overflow-hidden rounded-3xl bg-white/95 shadow-xl ring-1 ring-slate-200/60">
+          <header class="flex items-center gap-3 border-b border-slate-200/60 px-6 py-5">
+            <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-slate-100">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </span>
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">Resultado</p>
+              <h2 class="text-lg font-semibold text-slate-900">Detalhes da rota</h2>
+            </div>
+          </header>
 
-    mat-card-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0;
-      margin-top: 4px;
-    }
+          @if (googleMapsUrl()) {
+            <div class="border-b border-slate-200/60 px-6 py-4">
+              <a
+                class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-700 transition hover:border-indigo-300 hover:text-indigo-600"
+                [href]="googleMapsUrl()!"
+                target="_blank"
+                rel="noopener">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 10.5L21 6m0 0h-5.25M21 6v5.25" />
+                </svg>
+                Abrir no Google Maps
+              </a>
+            </div>
+          }
 
-    mat-card-actions {
-      display: flex;
-      padding: 0;
-      margin: 0 0 12px 0;
-    }
+          <div class="flex-1 overflow-y-auto px-6 pb-6 pt-4">
+            <div class="grid gap-4">
+              <div class="grid gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 text-sm text-slate-600">
+                <div class="flex items-center gap-3 rounded-2xl bg-white/80 px-4 py-3 shadow-sm">
+                  <span class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500/15 text-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h1.5M19.5 12H21M12 3v1.5m0 15V21m-6-9a6 6 0 0112 0v0a6 6 0 01-12 0v0z" />
+                    </svg>
+                  </span>
+                  <div class="flex flex-1 items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Distância</span>
+                    <span class="text-base font-bold text-indigo-600">{{ rota()!.distanciaEmMetros / 1000 | number:'1.1-1' }} km</span>
+                  </div>
+                </div>
 
-    mat-card-actions a {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .overlay-card--error {
-      margin-bottom: 16px;
-      border-left: 4px solid #f97316;
-    }
-
-    .erro-resumo {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 16px;
-      color: var(--mat-sys-on-surface);
-    }
-
-    .erro-status {
-      font-weight: 600;
-      color: #b91c1c;
-    }
-
-    .erro-mensagem {
-      font-size: 14px;
-    }
-
-    .erro-detalhes {
-      margin-top: 16px;
-      max-height: 200px;
-      overflow: auto;
-      background: rgba(0,0,0,0.04);
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      line-height: 1.4;
-      white-space: pre-wrap;
-    }
-
-    mat-card-header {
-      padding-bottom: 12px;
-      border-bottom: 1px solid rgba(0,0,0,0.08);
-      margin-bottom: 16px;
-    }
-
-    mat-card-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 18px;
-      font-weight: 600;
-    }
-
-    .rota-info {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-bottom: 16px;
-      padding: 8px 0;
-    }
-
-    .info-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: rgba(0,0,0,0.02);
-      padding: 12px;
-      border-radius: 8px;
-    }
-
-    .info-item mat-icon {
-      color: var(--mat-sys-primary);
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
-
-    .info-item .label {
-      font-weight: 500;
-      font-size: 14px;
-      color: var(--mat-sys-on-surface-variant);
-    }
-
-    .info-item .value {
-      margin-left: auto;
-      font-weight: 700;
-      color: var(--mat-sys-primary);
-      font-size: 16px;
-    }
-
-    mat-divider {
-      margin: 16px 0;
-    }
-
-    .postos-header h3 {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 16px 0 12px 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--mat-sys-on-surface);
-    }
-
-    .postos-header mat-icon {
-      color: var(--mat-sys-primary);
-    }
-
-    .posto-item {
-      width: 100%;
-      padding: 12px 0;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .posto-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 0;
-    }
-
-    .posto-nome {
-      font-weight: 600;
-      font-size: 15px;
-      color: var(--mat-sys-on-surface);
-      line-height: 1.4;
-    }
-
-    .posto-bandeira {
-      font-size: 13px;
-      color: var(--mat-sys-on-surface-variant);
-      margin-bottom: 0;
-      font-weight: 500;
-    }
-
-    mat-chip-set {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    mat-chip {
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    mat-list-item {
-      height: auto !important;
-      padding: 8px 0 !important;
-    }
-
-    mat-list {
-      padding: 0;
-    }
-
-    mat-divider {
-      margin: 0;
-    }
-
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 32px;
-      color: var(--mat-sys-on-surface-variant);
-    }
-
-    .empty-state mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      margin-bottom: 16px;
-    }
-
-    .empty-state p {
-      text-align: center;
-      margin: 0;
+                <div class="flex items-center gap-3 rounded-2xl bg-white/80 px-4 py-3 shadow-sm">
+                  <span class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l3 3" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </span>
+                  <div class="flex flex-1 items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Duração</span>
+                    <span class="text-base font-bold text-emerald-600">{{ rota()!.duracao }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      }
+    </div>
+  `,
+  styles: `
+    :host {
+      display: block;
     }
   `
 })
 export class ResultadoRotaComponent {
   rota = input<RotaDto | null>(null);
-  postosProximos = input<Posto[]>([]);
+  postosProximos = input<PostoComDistancias[]>([]);
   googleMapsUrl = input<string | null>(null);
   erro = input<ResumoErro | null>(null);
 

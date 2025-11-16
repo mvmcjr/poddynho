@@ -1,11 +1,17 @@
-﻿namespace Poddynho.Domain.Modelos;
+﻿using System.ComponentModel.DataAnnotations;
 
-public enum Combustivel
+namespace Poddynho.Domain.Modelos;
+
+public enum TipoCombustivel
 {
     Gasolina,
     Etanol,
-    Aditivada,
-    Premium
+    [Display(Name = "Gasolina Aditivada")]
+    GasolinaAditivada,
+    [Display(Name = "Etanol Aditivado")]
+    EtanolAditivado,
+    [Display(Name = "Gasolina Premium")]
+    GasolinaPremium
 }
 
 public record Posto
@@ -16,7 +22,11 @@ public record Posto
     
     public required string Bandeira { get; init; }
     
+    public required string Cidade { get; init; }
+    
+    public required string Estado { get; init; }
+    
     public required PontoGeografico Localizacao { get; init; }
 
-    public ICollection<Combustivel> Combustiveis { get; init; } = [];
+    public ICollection<TipoCombustivel> Combustiveis { get; init; } = [];
 }

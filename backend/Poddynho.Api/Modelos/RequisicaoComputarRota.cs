@@ -11,7 +11,7 @@ public record RequisicaoComputarRota
 
     public double DistanciaMaximaEmKm { get; init; } = 20.0;
 
-    public ICollection<Combustivel> TiposCombustivel { get; init; } =
+    public ICollection<TipoCombustivel> TiposCombustivel { get; init; } =
     [
     ];
     

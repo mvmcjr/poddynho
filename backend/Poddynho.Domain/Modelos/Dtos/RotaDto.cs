@@ -1,4 +1,4 @@
-﻿namespace Poddynho.Modelos;
+﻿namespace Poddynho.Domain.Modelos.Dtos;
 
 public record RotaDto(int DistanciaEmMetros, TimeSpan Duracao, string Polyline)
 {

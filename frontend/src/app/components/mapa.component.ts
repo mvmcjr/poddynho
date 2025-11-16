@@ -1,10 +1,17 @@
-import { Component, input, signal, viewChild, output } from '@angular/core';
+import { Component, input, signal, viewChild, output, effect } from '@angular/core';
 import { GoogleMapsModule, GoogleMap, MapInfoWindow, MapMarker } from '@angular/google-maps';
-import { Posto } from '../models';
+import { DecimalPipe } from '@angular/common';
+import { Posto, PostoComDistancias, PontoGeografico } from '../models';
+
+type RoutePoint = {
+  position: google.maps.LatLngLiteral;
+  label: string;
+  type: 'origin' | 'destination' | 'waypoint';
+};
 
 @Component({
   selector: 'app-mapa',
-  imports: [GoogleMapsModule],
+  imports: [GoogleMapsModule, DecimalPipe],
   template: `
     <google-map
       #mapa="googleMap"
@@ -14,6 +21,31 @@ import { Posto } from '../models';
       [zoom]="zoom()"
       [options]="mapOptions">
       
+      <!-- Origin Marker -->
+      @if (origem(); as origin) {
+        <map-marker
+          [position]="{ lat: origin.latitude, lng: origin.longitude }"
+          [options]="getOriginMarkerOptions()"
+          [title]="'Origem'" />
+      }
+      
+      <!-- Waypoint Markers -->
+      @for (waypoint of waypointMarkers(); track $index) {
+        <map-marker
+          [position]="waypoint.position"
+          [options]="getWaypointMarkerOptions(waypoint.label)"
+          [title]="'Parada ' + waypoint.label" />
+      }
+      
+      <!-- Destination Marker -->
+      @if (destino(); as dest) {
+        <map-marker
+          [position]="{ lat: dest.latitude, lng: dest.longitude }"
+          [options]="getDestinationMarkerOptions()"
+          [title]="'Destino'" />
+      }
+      
+      <!-- Gas Station Markers -->
       @for (posto of postos(); track posto.id || $index) {
         <map-marker
           #marker="mapMarker"
@@ -42,6 +74,23 @@ import { Posto } from '../models';
                 <span class="info-window__subtitle">{{ posto.bandeira }}</span>
               </div>
             </div>
+
+            @if (postoComDistancias(); as postoComDist) {
+              <div class="info-window__distances">
+                <div class="info-window__distance">
+                  <span class="info-window__distance-label">Da origem:</span>
+                  <span class="info-window__distance-value">{{ postoComDist.distanciaDaOrigemEmKm | number:'1.1-1' }} km</span>
+                </div>
+                <div class="info-window__distance">
+                  <span class="info-window__distance-label">Da rota:</span>
+                  <span class="info-window__distance-value">{{ postoComDist.distanciaDaRotaEmKm | number:'1.1-1' }} km</span>
+                </div>
+                <div class="info-window__distance">
+                  <span class="info-window__distance-label">Do destino:</span>
+                  <span class="info-window__distance-value">{{ postoComDist.distanciaDoDestinoEmKm | number:'1.1-1' }} km</span>
+                </div>
+              </div>
+            }
 
             <div class="info-window__chips">
               @for (combustivel of posto.combustiveis; track combustivel) {
@@ -122,6 +171,33 @@ import { Posto } from '../models';
       font-weight: 600;
     }
 
+    .info-window__distances {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    .info-window__distance {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .info-window__distance-label {
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .info-window__distance-value {
+      color: #0f172a;
+      font-weight: 600;
+    }
+
     .info-window__action {
       align-self: flex-start;
       padding: 8px 14px;
@@ -152,6 +228,9 @@ export class MapaComponent {
   zoom = signal(12);
   postos = input<Posto[]>([]);
   polyline = input<google.maps.LatLngLiteral[] | null>(null);
+  origem = input<PontoGeografico | null>(null);
+  destino = input<PontoGeografico | null>(null);
+  waypoints = input<PontoGeografico[]>([]);
   adicionarPosto = output<{ posto: Posto; etiqueta?: string }>();
   private geocoder?: google.maps.Geocoder;
 
@@ -160,14 +239,33 @@ export class MapaComponent {
 
   postoSelecionado = signal<Posto | null>(null);
   postoAtivoId = signal<string | null>(null);
+  
+  postoComDistancias = (): PostoComDistancias | null => {
+    const posto = this.postoSelecionado() as PostoComDistancias;
+    return posto && posto.distanciaDaOrigemEmKm !== undefined ? posto : null;
+  };
+  
+  waypointMarkers = signal<RoutePoint[]>([]);
+  
+  constructor() {
+    effect(() => {
+      const waypoints = this.waypoints();
+      const markers: RoutePoint[] = waypoints.map((wp, index) => ({
+        position: { lat: wp.latitude, lng: wp.longitude },
+        label: this.indexToMarker(index + 1),
+        type: 'waypoint' as const
+      }));
+      this.waypointMarkers.set(markers);
+    });
+  }
 
   mapOptions: google.maps.MapOptions = {
     mapTypeId: google.maps.MapTypeId.ROADMAP,
-    disableDefaultUI: false,
+    disableDefaultUI: true,
     zoomControl: true,
     fullscreenControl: false,
     streetViewControl: false,
-    mapTypeControl: false
+    mapTypeControl: false,
   };
 
   markerOptionsPadrao: google.maps.MarkerOptions = {
@@ -276,5 +374,79 @@ export class MapaComponent {
         }
       );
     });
+  }
+  
+  private indexToMarker(index: number): string {
+    let valor = index;
+    let marcador = '';
+    while (valor >= 0) {
+      marcador = String.fromCharCode(65 + (valor % 26)) + marcador;
+      valor = Math.floor(valor / 26) - 1;
+    }
+    return marcador;
+  }
+  
+  getOriginMarkerOptions(): google.maps.MarkerOptions {
+    return {
+      title: 'Origem',
+      zIndex: 10,
+      label: {
+        text: 'A',
+        color: '#ffffff',
+        fontWeight: '600',
+        fontSize: '14px'
+      },
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        fillColor: '#6366f1',
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 3,
+        scale: 18
+      }
+    };
+  }
+  
+  getDestinationMarkerOptions(): google.maps.MarkerOptions {
+    const waypointCount = this.waypoints().length;
+    return {
+      title: 'Destino',
+      zIndex: 10,
+      label: {
+        text: this.indexToMarker(waypointCount + 1),
+        color: '#ffffff',
+        fontWeight: '600',
+        fontSize: '14px'
+      },
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        fillColor: '#f43f5e',
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 3,
+        scale: 18
+      }
+    };
+  }
+  
+  getWaypointMarkerOptions(label: string): google.maps.MarkerOptions {
+    return {
+      title: 'Parada',
+      zIndex: 10,
+      label: {
+        text: label,
+        color: '#ffffff',
+        fontWeight: '600',
+        fontSize: '14px'
+      },
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        fillColor: '#6366f1',
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 3,
+        scale: 18
+      }
+    };
   }
 }

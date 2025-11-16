@@ -3,7 +3,18 @@ export interface PontoGeografico {
   longitude: number;
 }
 
-export type Combustivel = "Gasolina" | "Etanol" | "Aditivada" | "Premium";
+export type Combustivel = string;
+
+export interface TipoCombustivel {
+  nome: string;
+  valor: string;
+  iniciarSelecionado: boolean;
+}
+
+export interface CombustivelDto {
+  nome: string;
+  valor: string;
+}
 
 export interface Posto {
   id: string;
@@ -11,6 +22,15 @@ export interface Posto {
   bandeira: string;
   localizacao: PontoGeografico;
   combustiveis: Combustivel[];
+  cidade: string;
+  estado: string;
+}
+
+export interface PostoComDistancias extends Posto {
+  distanciaDaOrigemEmKm: number;
+  distanciaDaRotaEmKm: number;
+  distanciaDoDestinoEmKm: number;
+  combustiveisDto: CombustivelDto[];
 }
 
 export interface RotaDto {
@@ -29,5 +49,5 @@ export interface RequisicaoComputarRota {
 
 export interface RespostaCalculoRotaDto {
   rota: RotaDto;
-  postosProximos: Posto[];
+  postosProximos: PostoComDistancias[];
 }

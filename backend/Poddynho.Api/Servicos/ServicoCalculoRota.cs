@@ -1,10 +1,10 @@
 ﻿using Google.Api.Gax.Grpc;
 using Google.Maps.Routing.V2;
 using LightResults;
-using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using Poddynho.DbContexts;
 using Poddynho.Domain.Modelos;
+using Poddynho.Domain.Modelos.Dtos;
 using Poddynho.Extensoes;
 using Poddynho.Modelos;
 using Location = Google.Maps.Routing.V2.Location;
@@ -56,7 +56,7 @@ public class ServicoCalculoRota(PostosDbContext postosDbContext)
             .Where(x => requisicao.TiposCombustivel.Count == 0 ||
                         x.Combustiveis.Any(c => requisicao.TiposCombustivel.Contains(c)))
             .ToListAsync();
-        var postosProximos = new List<Posto>();
+        var postosProximos = new List<RespostaCalculoRotaDto.PostoDto>();
 
         const double degreesToKm = 111.132;
 
@@ -68,7 +68,12 @@ public class ServicoCalculoRota(PostosDbContext postosDbContext)
 
             if (distanceInKm <= requisicao.DistanciaMaximaEmKm)
             {
-                postosProximos.Add(station);
+                postosProximos.Add(new RespostaCalculoRotaDto.PostoDto(station)
+                {
+                    DistanciaDaOrigemEmKm = stationPoint.Distance(new Point((double)requisicao.Origem.Longitude, (double)requisicao.Origem.Latitude)) * degreesToKm,
+                    DistanciaDaRotaEmKm = distanceInKm,
+                    DistanciaDoDestinoEmKm = stationPoint.Distance(new Point((double)requisicao.Destino.Longitude, (double)requisicao.Destino.Latitude)) * degreesToKm
+                });
             }
         }
 

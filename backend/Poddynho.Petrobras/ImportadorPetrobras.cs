@@ -31,6 +31,12 @@ internal class ImportadorPetrobras : IImportadorPostos
         [JsonPropertyName("longitude")]
         public decimal Longitude { get; init; }
         
+        [JsonPropertyName("city")]
+        public string? Cidade { get; init; }
+        
+        [JsonPropertyName("state")]
+        public string? Estado { get; init; }
+        
         [JsonPropertyName("fuels")]
         public List<PostoCombustivel>? Combustiveis { get; init; }
     }
@@ -56,24 +62,33 @@ internal class ImportadorPetrobras : IImportadorPostos
             throw new Exception("Não foi possível desserializar o arquivo JSON da Petrobras.");
         
         return postosPetrobras
-            .Where(x => x.Nome is not null)
+            .Where(x =>
+                x.Nome is not null
+                && x.Cidade is not null
+                && x.Estado is not null
+            )
             .Select(x => new Posto
             {
                 Id = x.Id,
                 Nome = x.Nome!,
                 Bandeira = "Petrobras",
-                Localizacao = new PontoGeografico(x.Latitude, x.Longitude),
+                Localizacao = new PontoGeografico(x.Latitude,
+                    x.Longitude),
                 Combustiveis = x.Combustiveis?
-                    .Select(c => c.Id switch
-                    {
-                        1 => Combustivel.Gasolina,
-                        9 => Combustivel.Etanol,
-                        3 => Combustivel.Premium,
-                        _ => (Combustivel?)null
-                    })
-                    .Where(c => c != null)
-                    .Select(c => c!.Value)
-                    .ToList() ?? []
+                                   .Select(c => c.Id switch
+                                   {
+                                       1 => TipoCombustivel.Gasolina,
+                                       9 => TipoCombustivel.Etanol,
+                                       3 => TipoCombustivel.GasolinaPremium,
+                                       _ => (TipoCombustivel?)null
+                                   })
+                                   .Where(c => c != null)
+                                   .Select(c => c!.Value)
+                                   .ToList() ??
+                               [
+                               ],
+                Cidade = x.Cidade!,
+                Estado = x.Estado!
             })
             .ToList();
     }
