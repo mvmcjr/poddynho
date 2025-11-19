@@ -2,6 +2,7 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChang
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { provideHttpClient } from '@angular/common/http';
 import { provideIcons } from '@ng-icons/core';
+import { environment } from '../environments/environment';
 import {
   heroBanknotes,
   heroMapPin,
@@ -38,7 +39,7 @@ export const appConfig: ApplicationConfig = {
     }),
     provideAppInitializer(() => {
       setOptions({
-        key: 'AIzaSyDno0uJ2LIDK9SSeo2iRZzjYbEUHSdM58I',
+        key: environment.googleMapsApiKey,
         libraries: ['places']
       });
       return importLibrary('maps');

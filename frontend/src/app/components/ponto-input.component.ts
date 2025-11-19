@@ -40,7 +40,7 @@ import { PontoGeografico } from '../models';
             [value]="endereco()"
             (blur)="onBlur()"
             placeholder="Digite um endereço"
-            class="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
             type="text" />
         }
       </label>
@@ -84,14 +84,14 @@ import { PontoGeografico } from '../models';
 })
 export class PontoInputComponent implements AfterViewInit {
   inputElement = viewChild.required<ElementRef<HTMLInputElement>>('inputElement');
-  
+
   label = input('Endereço');
   valorInicial = input<string | null>(null);
   icon = input('place');
   compact = input(false);
   readonly = input(false);
   ponto = model<PontoGeografico | null>(null);
-  
+
   endereco = model('');
   private autocomplete?: google.maps.places.Autocomplete;
 
@@ -111,10 +111,10 @@ export class PontoInputComponent implements AfterViewInit {
         return '⬤';
     }
   }
-  
+
   ngAfterViewInit() {
     if (this.valorInicial()) {
-      this.endereco.set(this.valorInicial()?? '');
+      this.endereco.set(this.valorInicial() ?? '');
     }
 
     // Don't initialize autocomplete for readonly inputs
@@ -124,12 +124,12 @@ export class PontoInputComponent implements AfterViewInit {
 
     this.autocomplete = new google.maps.places.Autocomplete(
       this.inputElement().nativeElement,
-      { 
+      {
         componentRestrictions: { country: 'br' },
         fields: ['geometry', 'formatted_address', 'name']
       }
     );
-    
+
     this.autocomplete.addListener('place_changed', () => {
       const place = this.autocomplete!.getPlace();
       if (place.geometry?.location) {
@@ -141,13 +141,13 @@ export class PontoInputComponent implements AfterViewInit {
       }
     });
   }
-  
+
   limpar() {
     this.ponto.set(null);
     this.endereco.set('');
     this.inputElement().nativeElement.value = '';
   }
-  
+
   onBlur() {
     if (!this.ponto()) {
       this.endereco.set('');

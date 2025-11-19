@@ -1,1 +1,44 @@
 @import "tailwindcss";
+
+/* Google Maps Autocomplete Overrides */
+.pac-container {
+  @apply rounded-2xl border-0 shadow-xl ring-1 ring-slate-900/5 font-sans mt-2 overflow-hidden;
+  font-family: inherit;
+  z-index: 9999;
+}
+
+.pac-item {
+  @apply border-0 px-4 py-3 text-sm text-slate-600 cursor-pointer transition-colors hover:bg-slate-50;
+  line-height: 1.5;
+}
+
+.pac-item:first-child {
+  @apply rounded-t-xl;
+}
+
+.pac-item:last-child {
+  @apply rounded-b-xl;
+}
+
+.pac-item:hover, .pac-item-selected {
+  @apply bg-slate-50 text-slate-900;
+}
+
+.pac-icon {
+  display: none; /* Hide default ugly icon */
+}
+
+.pac-item-query {
+  @apply text-slate-900 font-semibold text-sm;
+}
+
+.pac-matched {
+  @apply font-bold text-indigo-600;
+}
+
+/* Hide the "powered by Google" logo if it interferes, but usually required by TOS. 
+   We can style the container to make it look better though. */
+.pac-container::after {
+  /* This is the logo container */
+  @apply p-2;
+}
