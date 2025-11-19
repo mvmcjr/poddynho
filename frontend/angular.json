@@ -35,6 +35,9 @@
             ],
             "styles": [
               "src/styles.scss"
+            ],
+            "scripts": [
+              "node_modules/@googlemaps/markerclusterer/dist/index.min.js"
             ]
           },
           "configurations": {

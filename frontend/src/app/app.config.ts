@@ -1,4 +1,5 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, provideAppInitializer } from '@angular/core';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { provideHttpClient } from '@angular/common/http';
 import { provideIcons } from '@ng-icons/core';
 import {
@@ -14,7 +15,7 @@ import {
   matRouteOutline, matScheduleOutline,
   matWarningOutline
 } from '@ng-icons/material-icons/outline';
-import {matDragIndicator} from '@ng-icons/material-icons/baseline';
+import { matDragIndicator } from '@ng-icons/material-icons/baseline';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -34,6 +35,13 @@ export const appConfig: ApplicationConfig = {
       matWarningOutline,
       matScheduleOutline,
       matRefreshOutline
+    }),
+    provideAppInitializer(() => {
+      setOptions({
+        key: 'AIzaSyDno0uJ2LIDK9SSeo2iRZzjYbEUHSdM58I',
+        libraries: ['places']
+      });
+      return importLibrary('maps');
     })
   ]
 };
