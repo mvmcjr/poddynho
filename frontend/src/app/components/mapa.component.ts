@@ -1,5 +1,5 @@
 import { Component, input, signal, viewChild, output, effect } from '@angular/core';
-import { GoogleMapsModule, GoogleMap, MapInfoWindow, MapMarker } from '@angular/google-maps';
+import { GoogleMapsModule, GoogleMap, MapInfoWindow, MapMarker, MapMarkerClusterer } from '@angular/google-maps';
 import { DecimalPipe } from '@angular/common';
 import { Posto, PostoComDistancias, PontoGeografico } from '../models';
 
@@ -11,7 +11,7 @@ type RoutePoint = {
 
 @Component({
   selector: 'app-mapa',
-  imports: [GoogleMapsModule, DecimalPipe],
+  imports: [GoogleMapsModule, DecimalPipe, MapMarkerClusterer],
   template: `
     <google-map
       #mapa="googleMap"
@@ -46,17 +46,19 @@ type RoutePoint = {
       }
       
       <!-- Gas Station Markers -->
-      @for (posto of postos(); track posto.id || $index) {
-        <map-marker
-          #marker="mapMarker"
-          [position]="{ 
-            lat: posto.localizacao.latitude, 
-            lng: posto.localizacao.longitude 
-          }"
-          [options]="posto.id === postoAtivoId() ? markerOptionsAtivo : markerOptionsPadrao"
-          [title]="posto.nome"
-          (mapClick)="abrirInfoWindow(marker, posto)" />
-      }
+      <map-marker-clusterer>
+        @for (posto of postos(); track posto.id || $index) {
+          <map-marker
+            #marker="mapMarker"
+            [position]="{ 
+              lat: posto.localizacao.latitude, 
+              lng: posto.localizacao.longitude 
+            }"
+            [options]="posto.id === postoAtivoId() ? markerOptionsAtivo : markerOptionsPadrao"
+            [title]="posto.nome"
+            (mapClick)="abrirInfoWindow(marker, posto)" />
+        }
+      </map-marker-clusterer>
       
       @if (polyline(); as path) {
         <map-polyline
@@ -239,14 +241,14 @@ export class MapaComponent {
 
   postoSelecionado = signal<Posto | null>(null);
   postoAtivoId = signal<string | null>(null);
-  
+
   postoComDistancias = (): PostoComDistancias | null => {
     const posto = this.postoSelecionado() as PostoComDistancias;
     return posto && posto.distanciaDaOrigemEmKm !== undefined ? posto : null;
   };
-  
+
   waypointMarkers = signal<RoutePoint[]>([]);
-  
+
   constructor() {
     effect(() => {
       const waypoints = this.waypoints();
@@ -375,7 +377,7 @@ export class MapaComponent {
       );
     });
   }
-  
+
   private indexToMarker(index: number): string {
     let valor = index;
     let marcador = '';
@@ -385,7 +387,7 @@ export class MapaComponent {
     }
     return marcador;
   }
-  
+
   getOriginMarkerOptions(): google.maps.MarkerOptions {
     return {
       title: 'Origem',
@@ -406,7 +408,7 @@ export class MapaComponent {
       }
     };
   }
-  
+
   getDestinationMarkerOptions(): google.maps.MarkerOptions {
     const waypointCount = this.waypoints().length;
     return {
@@ -428,7 +430,7 @@ export class MapaComponent {
       }
     };
   }
-  
+
   getWaypointMarkerOptions(label: string): google.maps.MarkerOptions {
     return {
       title: 'Parada',
