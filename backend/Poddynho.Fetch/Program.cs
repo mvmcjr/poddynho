@@ -1,7 +1,6 @@
 using CliFx;
-using Poddynho.Fetch;
 
-return await new CliApplicationBuilder()
-    .AddCommand<FetchCommand>()
+return await new CommandLineApplicationBuilder()
+    .AddCommandsFromThisAssembly()
     .Build()
     .RunAsync(args);

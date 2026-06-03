@@ -2,31 +2,31 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using CliFx;
-using CliFx.Attributes;
+using CliFx.Binding;
 using CliFx.Infrastructure;
 
 namespace Poddynho.Fetch;
 
 [Command(Description = "Busca todos os postos Petrobras via API e exporta JSON compatível com ImportadorPetrobras")]
-public class FetchCommand : ICommand
+public partial class FetchCommand : ICommand
 {
     [CommandOption("token", Description = "Token de autorização (valor do header Authorization)", EnvironmentVariable = "TOKEN")]
-    public required string Token { get; init; }
+    public required string Token { get; set; }
 
     [CommandOption("latitude", 'a', Description = "Latitude do centro da busca")]
-    public double Latitude { get; init; } = -22.737978794443222;
+    public double Latitude { get; set; } = -22.737978794443222;
 
     [CommandOption("longitude", 'o', Description = "Longitude do centro da busca")]
-    public double Longitude { get; init; } = -47.227411810308695;
+    public double Longitude { get; set; } = -47.227411810308695;
 
     [CommandOption("limit", 'l', Description = "Postos por página (padrão: 100)")]
-    public int Limit { get; init; } = 100;
+    public int Limit { get; set; } = 100;
 
     [CommandOption("distance", 'd', Description = "Raio de busca em km (padrão: 300k)")]
-    public int DistanceKm { get; init; } = 300_000;
+    public int DistanceKm { get; set; } = 300_000;
 
     [CommandOption("output", Description = "Caminho do arquivo de saída (padrão: stdout)")]
-    public string? OutputPath { get; init; }
+    public string? OutputPath { get; set; }
 
     private const string GraphQlUrl = "https://appb2c.petrobraspremmia.com.br/graphql";
 
